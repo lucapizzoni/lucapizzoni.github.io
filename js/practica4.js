@@ -7,6 +7,7 @@
 // Modulos necesarios
 import * as THREE from "../lib/three.module.js"
 import { OrbitControls } from "../../lib/OrbitControls.module.js";
+import {GUI} from "../lib/lil-gui.module.min.js";
 
 // Variables de consenso
 let renderer, scene, camera;
@@ -16,13 +17,24 @@ let robot;
 let brazo;
 let antebrazo;
 let nervios;
+let manoObject;
+let pinzaIzObject;
+let pinzaDeObject;
+
+
+let effectController;
+
 
 let planta;
 const L = 90;
 
+// material
+const material = new THREE.MeshNormalMaterial({wireframe : false, flatShading : true, side : THREE.DoubleSide});
+
 // Acciones
 init();
 loadScene();
+setupGUI();
 render();
 
 function init()
@@ -59,9 +71,6 @@ function init()
 
 function loadScene()
 {
-    // material
-    const material = new THREE.MeshNormalMaterial({wireframe : false, flatShading : true, side : THREE.DoubleSide});
-
     // suelo
     const suelo = new THREE.Mesh(new THREE.PlaneGeometry(1000,1000,25, 25), material);
     suelo.rotation.x = -Math.PI/2;
@@ -71,6 +80,9 @@ function loadScene()
     brazo = new THREE.Object3D();
     antebrazo = new THREE.Object3D();
     nervios = new THREE.Object3D();
+    manoObject = new THREE.Object3D();
+    pinzaIzObject = new THREE.Object3D();
+    pinzaDeObject = new THREE.Object3D();
 
     // create geometries
     const geoBase = new THREE.CylinderGeometry( 50, 50, 15, 20 );
@@ -166,10 +178,10 @@ function loadScene()
     nervio3.position.z = 7;
     nervio4.position.x = -7;
     nervio4.position.z = -7;
-    mano.position.y = 80
+    manoObject.position.y = 80
     mano.rotateX(-Math.PI/2);
-    pinzaIz.position.y = 10;
-    pinzaDe.position.y = -10;
+    pinzaIz.position.y = 3;
+    pinzaDe.position.y = -3;
     pinzaIz.rotateX(-Math.PI/2);
     pinzaDe.rotateX(-Math.PI/2);
 
@@ -182,13 +194,17 @@ function loadScene()
     brazo.add(antebrazo);
     antebrazo.add(disco);
     antebrazo.add(nervios);
-    antebrazo.add(mano);
+
+    antebrazo.add(manoObject)
+    manoObject.add(mano)
     nervios.add(nervio1);
     nervios.add(nervio2);
     nervios.add(nervio3);
     nervios.add(nervio4);
-    mano.add(pinzaIz);
-    mano.add(pinzaDe);
+    mano.add(pinzaIzObject);
+    mano.add(pinzaDeObject);
+    pinzaIzObject.add(pinzaIz);
+    pinzaDeObject.add(pinzaDe);
 
     // add to scene
     scene.add(suelo);
@@ -197,16 +213,34 @@ function loadScene()
     //robot.add(planta)
 }
 
-function update()
+function update(delta)
 {
+    robot.rotation.y = effectController.rotateBase * Math.PI/180;
+    brazo.rotation.z = effectController.rotateArm * Math.PI/180;
+    antebrazo.rotation.y = effectController.rotateForearmY * Math.PI/180;
+    antebrazo.rotation.z = effectController.rotateForearmZ * Math.PI/180;
+    manoObject.rotation.z = effectController.rotateHand * Math.PI/180;
+    pinzaIzObject.position.y = effectController.separationPinza/2
+    pinzaDeObject.position.y = -effectController.separationPinza/2
+    if (effectController.wired) {
+        material.wireframe = true;
+    } else {
+        material.wireframe = false;
+    }
     
+    //robot.position.set( 1+effectController.separacion/2,0,0);
+    // cubo.position.set( 1+effectController.separacion/2,0,0);
+    // esfera.position.set( -1-effectController.separacion/2,0,0);
+    // suelo.material.setValues( { color: effectController.coloralambres });
+    // esferaCubo.rotation.y = effectController.giroY * Math.PI/180;
 }
 
-function render()
+function render(delta)
 {
     requestAnimationFrame(render);
 
-    // update();
+    update(delta);
+
     renderer.clear();
     let smallerDimension = Math.min(window.innerWidth, window.innerHeight);
     let secondCameraSize = smallerDimension / 4;
@@ -271,7 +305,7 @@ function updateAspectRatio() {
 }
 
 function moveRobot(event) {
-    const speed = 50
+    const speed = 5
     switch (event.key) {
         case 'ArrowUp':
             robot.position.z -= speed; // Move the robot forward
@@ -286,4 +320,57 @@ function moveRobot(event) {
             robot.position.x += speed; // Move the robot right
             break;
       }
+}
+
+function setupGUI() {
+    // Definicion del objeto controlador
+    effectController = {
+        rotateBase: 0.0,
+        rotateArm: 0.0,
+        rotateForearmY : 0.0,
+        rotateForearmZ : 0.0,
+        rotateHand : 0.0,
+        separationPinza : 0.0,
+        wired: false,
+        animate: animate
+        // mensaje: 'Soldado y Robot',
+        // giroY: 0.0,
+        // separacion: 0,
+        // coloralambres: 'rgb(150,150,150)'
+    }
+
+    // Crear la GUI
+    const gui = new GUI();
+    const h = gui.addFolder("Control Robot");
+    h.add(effectController,"rotateBase",-180.0,180.0,0.025).name("Rotate base").listen();
+    h.add(effectController,"rotateArm",-45.0,45.0,0.025).name("Rotate arm").listen();
+    h.add(effectController,"rotateForearmY",-180.0,180.0,0.025).name("Rotate forearm Y").listen();
+    h.add(effectController,"rotateForearmZ",-90.0,90.0,0.025).name("Rotate forearm Y").listen();
+    h.add(effectController,"rotateHand",-40.0,220.0,0.025).name("Rotate hand").listen();
+    h.add(effectController,"separationPinza",0.0,15.0,0.025).name("Separation pinza").listen();
+    h.add(effectController, "wired").name("Wireframe");
+    h.add(effectController, "animate").name("Animate");
+
+
+    // gui.add(effectController,"mensaje").name("Aplicacion");
+    // gui.add(effectController,"giroY",-180.0,180.0,0.025).name("Giro en Y").listen();
+    // gui.add(effectController,"separacion",{'Ninguna':0, 'Media': 2, 'Total':5}).name("Separacion");
+    // gui.addColor(effectController,"coloralambres").name("Color alambres");
+
+
+}
+
+function animate(){
+    renderer.clear();
+    const rotationSpeed = 10;
+
+    //alert('Button clicked!');
+    requestAnimationFrame(animate);
+
+    // Rotate the cube around the Y-axis
+    robot.rotation.y += rotationSpeed;
+  
+    // Render the scene with the camera
+    renderer.render(scene, camera);
+    //renderer.render(scene, planta);
 }
