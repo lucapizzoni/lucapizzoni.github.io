@@ -1,11 +1,12 @@
 /**
- * Practica #2 GPC
+ * Practica #3 GPC
  * 
  * @author <lpizzon@ade.upv.es>, 2023
  */
 
 // Modulos necesarios
 import * as THREE from "../lib/three.module.js"
+import { OrbitControls } from "../../lib/OrbitControls.module.js";
 
 // Variables de consenso
 let renderer, scene, camera;
@@ -15,6 +16,9 @@ let robot;
 let brazo;
 let antebrazo;
 let nervios;
+
+let planta;
+const L = 90;
 
 // Acciones
 init();
@@ -26,22 +30,35 @@ function init()
     // Motor de render
     renderer = new THREE.WebGLRenderer();
     renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setClearColor(0xFFFFFF)
+    renderer.autoClear = false
     document.getElementById("container").appendChild(renderer.domElement);
 
     // Escena
     scene = new THREE.Scene();
-    scene.background = new THREE.Color(1.0,1.0,1.0);
+    //scene.background = new THREE.Color(1.0,1.0,1.0);
 
-    // Camera
+    // perspective Camera
     camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
     camera.position.set(150, 250, 150);
     camera.lookAt(0, 120, 0);
+
+    // Control de camara
+    const controls = new OrbitControls(camera, renderer.domElement);
+    //controls.target.set(0,120,0)
+
+    // Configuracion de las camaras
+    const ar = window.innerWidth / window.innerHeight;
+    setCameras(ar);
+
+    // Captura de eventos para redimension de la ventana
+    window.addEventListener('resize', updateAspectRatio);
 }
 
 function loadScene()
 {
     // material
-    const material = new THREE.MeshBasicMaterial( {color:'red', wireframe: true} ); 
+    const material = new THREE.MeshNormalMaterial({wireframe : false, flatShading : true, side : THREE.DoubleSide});
 
     // suelo
     const suelo = new THREE.Mesh(new THREE.PlaneGeometry(1000,1000,25, 25), material);
@@ -73,7 +90,6 @@ function loadScene()
     const nervio3 = new THREE.Mesh( geoNervio, material );
     const nervio4 = new THREE.Mesh( geoNervio, material );
     const mano = new THREE.Mesh( geoMano, material );
-    
     const geoPinza = new THREE.BufferGeometry();
 
     // define vertices of pinza
@@ -150,8 +166,8 @@ function loadScene()
     nervio4.position.z = -7;
     mano.position.y = 80
     mano.rotateX(-Math.PI/2);
-    pinzaIz.position.y = 12;
-    pinzaDe.position.y = -12;
+    pinzaIz.position.y = 10;
+    pinzaDe.position.y = -10;
     pinzaIz.rotateX(-Math.PI/2);
     pinzaDe.rotateX(-Math.PI/2);
 
@@ -175,6 +191,8 @@ function loadScene()
     // add to scene
     scene.add(suelo);
     scene.add(robot);
+
+    //robot.add(planta)
 }
 
 function update()
@@ -185,6 +203,66 @@ function update()
 function render()
 {
     requestAnimationFrame(render);
-    update();
-    renderer.render(scene, camera);
+    // update();
+    renderer.clear();
+    let smallerDimension = Math.min(window.innerWidth, window.innerHeight);
+    let secondCameraSize = smallerDimension / 4;
+
+    let w = window.innerWidth;
+    let h = window.innerHeight;
+
+    // Vista de la cámara principal (perspectiva)
+    renderer.setViewport(0, h-secondCameraSize, secondCameraSize,secondCameraSize);
+    renderer.render(scene, planta);
+
+    // Vista de la cámara de planta
+    renderer.setViewport(0, 0, w, h);
+    renderer.render(scene, camera);
+}
+
+function setCameras(ar){
+    // creacion de las camaras
+    // ar -> aspect ratio (rel. de aspecto)
+    let camaraOrto;
+    if(ar>1) 
+        camaraOrto = new THREE.OrthographicCamera(-L, L, L, -L, -200, 200);
+    else 
+        camaraOrto = new THREE.OrthographicCamera(-L, L, L, -L, -200, 200);
+
+    planta = camaraOrto.clone();
+    planta.position.set(0,L,0);
+    planta.lookAt(0,0,0);
+    planta.up = new THREE.Vector3(0,0,-1); // Cambia el vector UP de la camara porque mira hacia abajo
+}
+
+function updateAspectRatio() {
+    // Cada vez que se cambie el tamayo de la ventana, se llama a esta funcion
+    // Cambiar las dimensiones del canvas
+    renderer.setSize(window.innerWidth, window.innerHeight);
+
+    // Nuevo ar de la camara
+    const ar = window.innerWidth / window.innerHeight
+
+    // perspectiva
+    camera.aspect = ar;
+    camera.updateProjectionMatrix();
+
+    // ortografica
+    // en funcion del ar, se cambia la camara
+    if(ar > 1){
+        planta.left = -L;
+        planta.right = L;
+        planta.bottom = -L;
+        planta.top = L;
+    }
+    else {
+        planta.left = -L;
+        planta.right = L;
+        planta.bottom = -L;
+        planta.top = L;
+
+    }
+
+    // actualizar matrices de proyeccion
+    planta.updateProjectionMatrix();
 }

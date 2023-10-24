@@ -1,8 +1,7 @@
 /**
  * Escena.js
  * 
- * Seminario #3 GPC: Pintar una escena basica con tranformaciones,
- * animacion y modelos importados.
+ * Seminario #3 GPC
  * 
  * @author <lpizzon@ade.upv.es>, 2023
  */
