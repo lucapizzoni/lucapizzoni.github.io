@@ -14,8 +14,7 @@ let renderer, scene, camera;
 let cameraHelper;
 let t = 0;
 let curveRight;
-let curveLeft;
-let lane = 1;
+let lane = 0;
 let car;
 let mixer;
 let speed = 0.001;
@@ -101,46 +100,28 @@ function loadScene(){
     
     // Create a closed wavey loop
     curveRight = new THREE.CatmullRomCurve3( [
-        new THREE.Vector3( 30, 2, -21 ),
-        new THREE.Vector3( 53, 2, -17 ),
-        new THREE.Vector3( 60, 2, -12 ),
-        new THREE.Vector3( 62, 2, -5 ),
-        new THREE.Vector3( 58, 2, 5 ),
-        new THREE.Vector3( 45, 2, 16 ),
-        new THREE.Vector3( 32, 2, 27 ),
-        new THREE.Vector3( 12, 2, 17 ),
-        new THREE.Vector3( -5, 2, 24 ),
-        new THREE.Vector3( -20, 2, 32 ),
-        new THREE.Vector3( -43, 2, 18 ),
-        new THREE.Vector3( -49, 2, -2 ),
-        new THREE.Vector3( -44, 2, -22 ),
-        new THREE.Vector3( 2, 2, -23 ),
-        new THREE.Vector3( 30, 2, -21 )
+        new THREE.Vector3( 19, 2, -21.5 ),
+        new THREE.Vector3( 35, 2, -20.5 ),
+        new THREE.Vector3( 52, 2, -17 ),
+        new THREE.Vector3( 61.5, 2, -9 ),
+        new THREE.Vector3( 58, 2, 4 ),
+        new THREE.Vector3( 46, 2, 14 ),
+        new THREE.Vector3( 31, 2, 27 ),
+        new THREE.Vector3( 19, 2, 20 ),
+        new THREE.Vector3( 11, 2, 18 ),
+        new THREE.Vector3( 0, 2, 20 ),
+        new THREE.Vector3( -22, 2, 31 ),
+        new THREE.Vector3( -47, 2, 11 ),
+        new THREE.Vector3( -46, 2, -21 ),
+        new THREE.Vector3( -30, 2, -24 ),
+        new THREE.Vector3( -10, 2, -23 ),
+        new THREE.Vector3( 19, 2, -21.5 )
         
-    ] );
-
-    curveLeft = new THREE.CatmullRomCurve3( [
-        new THREE.Vector3( 30, 2, -24 ),
-        new THREE.Vector3( 56, 2, -17 ),
-        new THREE.Vector3( 63, 2, -12 ),
-        new THREE.Vector3( 66, 2, -2 ),
-        new THREE.Vector3( 58, 2, 8 ),
-        new THREE.Vector3( 45, 2, 19 ),
-        new THREE.Vector3( 32, 2, 30 ),
-        new THREE.Vector3( 12, 2, 20 ),
-        new THREE.Vector3( -5, 2, 27 ),
-        new THREE.Vector3( -23, 2, 36 ),
-        new THREE.Vector3( -46, 2, 18 ),
-        new THREE.Vector3( -52, 2, -5 ),
-        new THREE.Vector3( -44, 2, -25 ),
-        new THREE.Vector3( 2, 2, -26 ),
-        new THREE.Vector3( 30, 2, -24 )
     ] );
 
     //addPointsToScene(curveRight.getPoints(15), scene);
 
-    const pointsRight = curveRight.getPoints( 150 )
-    const pointsLeft = curveLeft.getPoints( 150 )
+    const pointsRight = curveRight.getPoints( 500 )
 
     const material = new THREE.LineBasicMaterial( { color: 0xff0000 } );
     const materialTransparent = new THREE.MeshBasicMaterial({
@@ -151,21 +132,18 @@ function loadScene(){
 
     const cubeGeometry = new THREE.BoxGeometry( 4, 2, 2 ); 
     const geometryRight = new THREE.BufferGeometry().setFromPoints( pointsRight );
-    const geometryLeft = new THREE.BufferGeometry().setFromPoints( pointsLeft );
 
     const curveObjectRight = new THREE.Line( geometryRight, materialTransparent );
-    const curveObjectLeft = new THREE.Line( geometryLeft, materialTransparent );
 
     scene.add(curveObjectRight)
-    scene.add(curveObjectLeft)
 
-    //scene.add(new THREE.AxisHelper(2));
-
+    var axisHelper = new THREE.AxisHelper(10)
+    axisHelper.position.y = 1
+    scene.add(axisHelper);
     
     cameraHelper = new THREE.Mesh( cubeGeometry, materialTransparent );
 
     scene.add( cameraHelper )
-
 }
 
 function updateAspectRatio(){
@@ -181,44 +159,43 @@ function update(){
     }
 
     // Increase speed gradually
-    speed += 0.000001; // You can adjust the rate of acceleration as needed
+    speed += 0.0000009; // You can adjust the rate of acceleration as needed
 
-    t += speed; // Increase t with the current speed
+    t = speed; // Increase t with the current speed
     if (t > 1) t = 0;
     
-    // t += 0.001;
+    // t += speed;
     // if (t > 1) t = 0;
 
     var pointOnCurve = curveRight.getPointAt(t);
 
-    if (lane == 0){
-        pointOnCurve = curveLeft.getPointAt(t);
-    }
-    else{
-        pointOnCurve = curveRight.getPointAt(t);
-    }
 
     // Update the car's position
     car.position.copy(pointOnCurve);
+
+    if (lane == 1) {
+        car.translateZ(-3);
+    }
 
     // Update the car's rotation to follow the curve
     const tangent = curveRight.getTangentAt(t);
     const angle = Math.atan2(-tangent.z, tangent.x); // Calculate the angle based on the tangent
     car.rotation.y = angle;
+    console.log(car.rotation.y)
 
     const pointForHelper = curveRight.getPointAt(t);
     // Update the helper's position
     cameraHelper.position.copy(pointForHelper);
     cameraHelper.rotation.y = angle;
     
-    // Calculate the position behind the car
-    const distanceBehindCar = -10; // Adjust the distance as needed
-    const relativePosition = new THREE.Vector3(distanceBehindCar, 10, 0);
-    const cameraPosition = relativePosition.applyMatrix4(cameraHelper.matrixWorld);
+    // // Calculate the position behind the car
+    // const distanceBehindCar = -10; // Adjust the distance as needed
+    // const relativePosition = new THREE.Vector3(distanceBehindCar, 10, 0);
+    // const cameraPosition = relativePosition.applyMatrix4(cameraHelper.matrixWorld);
 
-    // Update the camera's position and look-at direction
-    camera.position.copy(cameraPosition);
-    camera.lookAt(cameraHelper.position);
+    // // Update the camera's position and look-at direction
+    // camera.position.copy(cameraPosition);
+    // camera.lookAt(cameraHelper.position);
 }
 
 function render(){
@@ -229,10 +206,10 @@ function render(){
 
 function changeLane(event){
     if (event.key == 'ArrowLeft'){
-        lane = 0;
+        lane = 1;
     }
     else if (event.key == 'ArrowRight'){
-        lane = 1;
+        lane = 0;
     }
 }
 
