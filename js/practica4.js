@@ -8,6 +8,7 @@
 import * as THREE from "../lib/three.module.js"
 import { OrbitControls } from "../../lib/OrbitControls.module.js";
 import {GUI} from "../lib/lil-gui.module.min.js";
+import {TWEEN} from "../lib/tween.module.min.js";
 
 // Variables de consenso
 let renderer, scene, camera;
@@ -52,12 +53,11 @@ function init()
 
     // perspective Camera
     camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
-    camera.position.set(150, 250, 150);
+    camera.position.set(300, 300, 300);
     camera.lookAt(0, 120, 0);
 
     // Control de camara
     const controls = new OrbitControls(camera, renderer.domElement);
-    //controls.target.set(0,120,0)
 
     // Configuracion de las camaras
     const ar = window.innerWidth / window.innerHeight;
@@ -227,12 +227,8 @@ function update(delta)
     } else {
         material.wireframe = false;
     }
-    
-    //robot.position.set( 1+effectController.separacion/2,0,0);
-    // cubo.position.set( 1+effectController.separacion/2,0,0);
-    // esfera.position.set( -1-effectController.separacion/2,0,0);
-    // suelo.material.setValues( { color: effectController.coloralambres });
-    // esferaCubo.rotation.y = effectController.giroY * Math.PI/180;
+
+    TWEEN.update(delta);
 }
 
 function render(delta)
@@ -330,13 +326,9 @@ function setupGUI() {
         rotateForearmY : 0.0,
         rotateForearmZ : 0.0,
         rotateHand : 0.0,
-        separationPinza : 0.0,
+        separationPinza : 15.0,
         wired: false,
         animate: animate
-        // mensaje: 'Soldado y Robot',
-        // giroY: 0.0,
-        // separacion: 0,
-        // coloralambres: 'rgb(150,150,150)'
     }
 
     // Crear la GUI
@@ -351,26 +343,101 @@ function setupGUI() {
     h.add(effectController, "wired").name("Wireframe");
     h.add(effectController, "animate").name("Animate");
 
-
-    // gui.add(effectController,"mensaje").name("Aplicacion");
-    // gui.add(effectController,"giroY",-180.0,180.0,0.025).name("Giro en Y").listen();
-    // gui.add(effectController,"separacion",{'Ninguna':0, 'Media': 2, 'Total':5}).name("Separacion");
-    // gui.addColor(effectController,"coloralambres").name("Color alambres");
-
-
 }
 
 function animate(){
-    renderer.clear();
-    const rotationSpeed = 10;
+    
+    // rotate
+    const initial = 0;
+    const target = - Math.PI / 3;
+    const initalPosition = 15;
+    const targetPosition = 0;
 
-    //alert('Button clicked!');
-    requestAnimationFrame(animate);
 
-    // Rotate the cube around the Y-axis
-    robot.rotation.y += rotationSpeed;
-  
-    // Render the scene with the camera
-    renderer.render(scene, camera);
-    //renderer.render(scene, planta);
+    const forward = new TWEEN.Tween({ rotation: initial, y: initalPosition})
+        .to({ rotation: target, y: targetPosition }, 2000)
+        .onUpdate((coords) => {
+            effectController.rotateBase = coords.rotation / Math.PI * 180;
+            effectController.rotateArm = coords.rotation / Math.PI * 180;
+            effectController.rotateForearmY = coords.rotation / Math.PI * 180;
+            effectController.rotateForearmZ = coords.rotation / Math.PI * 180;
+            effectController.rotateHand = coords.rotation / Math.PI * 180;
+            effectController.separationPinza = coords.y;
+
+            // robot.rotation.y = coords.rotation;
+            // brazo.rotation.z = coords.rotation;
+            // antebrazo.rotation.y = coords.rotation;
+            // antebrazo.rotation.z = coords.rotation;
+            // manoObject.rotation.z = coords.rotation;
+            // pinzaIzObject.position.y = coords.y;
+            // pinzaDeObject.position.y = -coords.y;
+        });
+
+    const back1 = new TWEEN.Tween({ rotation: target, y: targetPosition })
+        .to({ rotation: initial, y: initalPosition }, 2000)
+        .onUpdate((coords) => {
+            effectController.rotateBase = coords.rotation / Math.PI * 180;
+            effectController.rotateArm = coords.rotation / Math.PI * 180;
+            effectController.rotateForearmY = coords.rotation / Math.PI * 180;
+            effectController.rotateForearmZ = coords.rotation / Math.PI * 180;
+            effectController.rotateHand = coords.rotation / Math.PI * 180;
+            effectController.separationPinza = coords.y;
+            
+            // robot.rotation.y = coords.rotation;
+            // brazo.rotation.z = coords.rotation;
+            // antebrazo.rotation.y = coords.rotation;
+            // antebrazo.rotation.z = coords.rotation;
+            // manoObject.rotation.z = coords.rotation;
+            // pinzaIzObject.position.y = coords.y;
+            // pinzaDeObject.position.y = -coords.y;
+        });
+
+        const backward = new TWEEN.Tween({ rotation: initial, y: initalPosition})
+            .to({ rotation: -target, y: targetPosition }, 2000)
+            .onUpdate((coords) => {
+                effectController.rotateBase = coords.rotation / Math.PI * 180;
+                effectController.rotateArm = coords.rotation / Math.PI * 180;
+                effectController.rotateForearmY = coords.rotation / Math.PI * 180;
+                effectController.rotateForearmZ = coords.rotation / Math.PI * 180;
+                effectController.rotateHand = coords.rotation / Math.PI * 180;
+                effectController.separationPinza = coords.y;
+
+                // robot.rotation.y = coords.rotation;
+                // brazo.rotation.z = coords.rotation;
+                // antebrazo.rotation.y = coords.rotation;
+                // antebrazo.rotation.z = coords.rotation;
+                // manoObject.rotation.z = coords.rotation;
+                // pinzaIzObject.position.y = coords.y;
+                // pinzaDeObject.position.y = -coords.y;
+            });
+
+        const back2 = new TWEEN.Tween({ rotation: -target, y: targetPosition })
+            .to({ rotation: initial, y: initalPosition }, 2000)
+            .onUpdate((coords) => {
+                effectController.rotateBase = coords.rotation / Math.PI * 180;
+                effectController.rotateArm = coords.rotation / Math.PI * 180;
+                effectController.rotateForearmY = coords.rotation / Math.PI * 180;
+                effectController.rotateForearmZ = coords.rotation / Math.PI * 180;
+                effectController.rotateHand = coords.rotation / Math.PI * 180;
+                effectController.separationPinza = coords.y;
+                
+                // robot.rotation.y = coords.rotation;
+                // brazo.rotation.z = coords.rotation;
+                // antebrazo.rotation.y = coords.rotation;
+                // antebrazo.rotation.z = coords.rotation;
+                // manoObject.rotation.z = coords.rotation;
+                // pinzaIzObject.position.y = coords.y;
+                // pinzaDeObject.position.y = -coords.y;
+            });
+    
+    
+
+
+    
+        
+    forward.chain(back1);
+    back1.chain(backward);
+    backward.chain(back2);
+    forward.start();
+ 
 }

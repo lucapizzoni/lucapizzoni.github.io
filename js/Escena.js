@@ -82,7 +82,7 @@ function loadScene()
                         gltf.scene. rotation.y = -Math.PI/2;
                         //gltf.scene.scale.set(0.1,0.1, 0.1);
                         esfera.add( gltf.scene);
-                    })
+                    })                                    
 
     scene.add(new THREE.AxisHelper(2));
     scene.add(suelo)
