@@ -18,6 +18,9 @@ let lane = 0;
 let car;
 let mixer;
 let speed = 0.001;
+let surrounding;
+let carBoundingBox;
+let obstacleBoundingBox;
 
 // Actions
 init();
@@ -66,6 +69,9 @@ function init(){
 }
 
 function loadScene(){
+    carBoundingBox = new THREE.Box3();
+    obstacleBoundingBox = new THREE.Box3();
+
     // Import model
     const gltfloader = new GLTFLoader();
     gltfloader.load(
@@ -73,6 +79,16 @@ function loadScene(){
         function( gltf ){
 
             scene.add( gltf.scene );
+
+            surrounding = gltf.scene;
+
+            const obstacle = surrounding.getObjectByName('Obstacle1');
+            obstacleBoundingBox.setFromObject(obstacle);
+            console.log('Obstacle Bounding Box:');
+            console.log('Min:', obstacleBoundingBox.min);
+            console.log('Max:', obstacleBoundingBox.max);
+
+
 
         })
     
@@ -94,28 +110,34 @@ function loadScene(){
                 }
             }
 
+            carBoundingBox.setFromObject(car);
+            console.log('Car Bounding Box:');
+            console.log('Min:', carBoundingBox.min);
+            console.log('Max:', carBoundingBox.max);
+
             update();
 
         })
+
     
     // Create a closed wavey loop
     curveRight = new THREE.CatmullRomCurve3( [
-        new THREE.Vector3( 19, 2, -21.5 ),
-        new THREE.Vector3( 35, 2, -20.5 ),
-        new THREE.Vector3( 52, 2, -17 ),
-        new THREE.Vector3( 61.5, 2, -9 ),
-        new THREE.Vector3( 58, 2, 4 ),
-        new THREE.Vector3( 46, 2, 14 ),
-        new THREE.Vector3( 31, 2, 27 ),
-        new THREE.Vector3( 19, 2, 20 ),
-        new THREE.Vector3( 11, 2, 18 ),
-        new THREE.Vector3( 0, 2, 20 ),
-        new THREE.Vector3( -22, 2, 31 ),
-        new THREE.Vector3( -47, 2, 11 ),
-        new THREE.Vector3( -46, 2, -21 ),
-        new THREE.Vector3( -30, 2, -24 ),
-        new THREE.Vector3( -10, 2, -23 ),
-        new THREE.Vector3( 19, 2, -21.5 )
+        new THREE.Vector3( 19, 1, -21.5 ),
+        new THREE.Vector3( 35, 1, -20.5 ),
+        new THREE.Vector3( 52, 1, -17 ),
+        new THREE.Vector3( 61.5, 1, -9 ),
+        new THREE.Vector3( 58, 1, 4 ),
+        new THREE.Vector3( 46, 1, 14 ),
+        new THREE.Vector3( 31, 1, 27 ),
+        new THREE.Vector3( 19, 1, 20 ),
+        new THREE.Vector3( 11, 1, 18 ),
+        new THREE.Vector3( 0, 1, 20 ),
+        new THREE.Vector3( -22, 1, 31 ),
+        new THREE.Vector3( -47, 1, 11 ),
+        new THREE.Vector3( -46, 1, -21 ),
+        new THREE.Vector3( -30, 1, -24 ),
+        new THREE.Vector3( -10, 1, -23 ),
+        new THREE.Vector3( 19, 1, -21.5 )
         
     ] );
 
@@ -139,7 +161,7 @@ function loadScene(){
 
     var axisHelper = new THREE.AxisHelper(10)
     axisHelper.position.y = 1
-    scene.add(axisHelper);
+    //scene.add(axisHelper);
     
     cameraHelper = new THREE.Mesh( cubeGeometry, materialTransparent );
 
@@ -153,6 +175,8 @@ function updateAspectRatio(){
 }
 
 function update(){
+    checkCollision();
+
     if (mixer) {
         // Update the animation mixer
         mixer.update(0.01); // You can pass a time delta as a parameter to control the animation speed
@@ -161,14 +185,13 @@ function update(){
     // Increase speed gradually
     speed += 0.0000009; // You can adjust the rate of acceleration as needed
 
-    t = speed; // Increase t with the current speed
+    t += speed; // Increase t with the current speed
     if (t > 1) t = 0;
     
     // t += speed;
     // if (t > 1) t = 0;
 
     var pointOnCurve = curveRight.getPointAt(t);
-
 
     // Update the car's position
     car.position.copy(pointOnCurve);
@@ -181,7 +204,7 @@ function update(){
     const tangent = curveRight.getTangentAt(t);
     const angle = Math.atan2(-tangent.z, tangent.x); // Calculate the angle based on the tangent
     car.rotation.y = angle;
-    console.log(car.rotation.y)
+    //console.log(car.rotation.y)
 
     const pointForHelper = curveRight.getPointAt(t);
     // Update the helper's position
@@ -221,5 +244,13 @@ function addPointsToScene(points, scene) {
         const pointMesh = new THREE.Mesh(pointGeometry, pointMaterial);
         pointMesh.position.copy(point);
         scene.add(pointMesh);
+    }
+}
+
+function checkCollision() {
+    carBoundingBox.setFromObject(car);
+    if (carBoundingBox.intersectsBox(obstacleBoundingBox)) {
+        console.log('Collided!');
+        // Handle the collision, e.g., stop the car or trigger some other action.
     }
 }
