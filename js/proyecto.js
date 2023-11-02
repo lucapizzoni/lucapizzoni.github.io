@@ -46,11 +46,11 @@ function init(){
     const controls = new OrbitControls(camera, renderer.domElement);
 
     // Lighting
-    const ambientLight = new THREE.AmbientLight( 0x404040 );
+    const ambientLight = new THREE.AmbientLight( 0x404040, 1.5 );
     scene.add( ambientLight );
     // const hemisphereLight = new THREE.HemisphereLight( 0xffffbb, 0x080820, 0.4 );
-    // scene.add( hemisphereLight );
-    const directionalLight1 = new THREE.DirectionalLight( 0xffffff, 0.5 );
+    //scene.add( hemisphereLight );
+    const directionalLight1 = new THREE.DirectionalLight( 0xffffff, 1.5 );
     directionalLight1.position.set(50, 30, 0);
     const directionalLight2 = new THREE.DirectionalLight( 0xffffff, 0.5 );
     directionalLight2.position.set(-50, 30, 0);
@@ -59,9 +59,9 @@ function init(){
     const directionalLight4 = new THREE.DirectionalLight( 0xffffff, 0.5 );
     directionalLight4.position.set(0, 30, -50);
     scene.add( directionalLight1 );
-    scene.add( directionalLight2 );
-    scene.add( directionalLight3 );
-    scene.add( directionalLight4 );
+    //scene.add( directionalLight2 );
+    //scene.add( directionalLight3 );
+    //scene.add( directionalLight4 );
 
     // Events
     window.addEventListener('resize',updateAspectRatio);
@@ -211,14 +211,14 @@ function update(){
     cameraHelper.position.copy(pointForHelper);
     cameraHelper.rotation.y = angle;
     
-    // // Calculate the position behind the car
-    // const distanceBehindCar = -10; // Adjust the distance as needed
-    // const relativePosition = new THREE.Vector3(distanceBehindCar, 10, 0);
-    // const cameraPosition = relativePosition.applyMatrix4(cameraHelper.matrixWorld);
+    // Calculate the position behind the car
+    const distanceBehindCar = -10; // Adjust the distance as needed
+    const relativePosition = new THREE.Vector3(distanceBehindCar, 10, 0);
+    const cameraPosition = relativePosition.applyMatrix4(cameraHelper.matrixWorld);
 
-    // // Update the camera's position and look-at direction
-    // camera.position.copy(cameraPosition);
-    // camera.lookAt(cameraHelper.position);
+    // Update the camera's position and look-at direction
+    camera.position.copy(cameraPosition);
+    camera.lookAt(cameraHelper.position);
 }
 
 function render(){
