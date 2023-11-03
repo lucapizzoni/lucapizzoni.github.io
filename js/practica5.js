@@ -31,6 +31,19 @@ const L = 90;
 
 // material
 const material = new THREE.MeshNormalMaterial({wireframe : false, flatShading : true, side : THREE.DoubleSide});
+const texSuelo = new THREE.TextureLoader().load("images/pisometalico_1024.jpg");
+const matSuelo = new THREE.MeshLambertMaterial({ color: 'white', map: texSuelo });
+const texMetal = new THREE.TextureLoader().load("images/metal_128.jpg");
+const matMetal = new THREE.MeshPhongMaterial({ color: 'white', map: texMetal });
+const texWood = new THREE.TextureLoader().load("images/wood512.jpg");
+const matWood = new THREE.MeshLambertMaterial({ color: 'white', map: texWood });
+const surrounding = [
+    "images/posx.jpg","images/negx.jpg",
+    "images/posy.jpg","images/negy.jpg",
+    "images/posz.jpg","images/negz.jpg",
+]
+const texRotula= new THREE.CubeTextureLoader().load(surrounding)
+const matRotula = new THREE.MeshPhongMaterial({color:"white",specular:"gray",shininess:30,envMap:texRotula})
 
 // Acciones
 init();
@@ -51,13 +64,12 @@ function init()
     renderer.shadowMap.enabled = true;
     renderer.antialias = true;
     
-
     // Escena
     scene = new THREE.Scene();
     //scene.background = new THREE.Color(1.0,1.0,1.0);
 
     // perspective Camera
-    camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+    camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 10000);
     camera.position.set(300, 300, 300);
     camera.lookAt(0, 120, 0);
 
@@ -74,25 +86,42 @@ function init()
     scene.add( ambientLight );
     // directional
     const directionalLight = new THREE.DirectionalLight( 0xffffff, 0.5 );
-    directionalLight.position.set(-300, 600, 800);
-    scene.add( directionalLight );
-    scene.add(new THREE.CameraHelper(directionalLight.shadow.camera));
-    // focal
-    const spotLight = new THREE.SpotLight('white', 0.5);
-    spotLight.position.set(500, 600, -800);
+    directionalLight.position.set(0, 600, -500);
+    directionalLight.target.position.set(0, 0, 0);
+    directionalLight.shadow.camera.far = 2000; 
+    directionalLight.shadow.mapSize.width = 10000;
+    directionalLight.shadow.mapSize.height = 10000;
+    directionalLight.shadow.camera.left = -500;
+    directionalLight.shadow.camera.right = 500;
+    directionalLight.shadow.camera.top = 500;
+    directionalLight.shadow.camera.bottom = -500;
+    directionalLight.castShadow = true;
+    scene.add(directionalLight.target);
+    scene.add(directionalLight);
+    //scene.add(new THREE.CameraHelper(directionalLight.shadow.camera));
+    
+    // spot 1
+    const spotLight = new THREE.SpotLight('white', 0.3);
+    spotLight.position.set(500, 600, 0);
     spotLight.target.position.set(0, 0, 0);
-    spotLight.angle = Math.PI / 7;
-    spotLight.penumbra = 0.2;
-    spotLight.shadow.camera.near = 30;
-    spotLight.shadow.camera.far = 1500;
-    spotLight.shadow.camera.fov = 4000;    
+    spotLight.shadow.camera.far = 2000; 
     spotLight.shadow.mapSize.width = 10000;
     spotLight.shadow.mapSize.height = 10000;
-
-    scene.add(spotLight.target);
     spotLight.castShadow = true;
+    scene.add(spotLight.target);
     scene.add(spotLight);
-    scene.add(new THREE.CameraHelper(spotLight.shadow.camera));
+    //scene.add(new THREE.CameraHelper(spotLight.shadow.camera));
+
+    // spot 2
+    const spotLight2 = new THREE.SpotLight('white', 0.3);
+    spotLight2.position.set(-500, 600, 0);
+    spotLight2.target.position.set(0, 0, 0);
+    spotLight2.shadow.camera.far = 2000; 
+    spotLight2.shadow.mapSize.width = 10000;
+    spotLight2.shadow.mapSize.height = 10000;
+    spotLight2.castShadow = true;
+    scene.add(spotLight2.target);
+    scene.add(spotLight2);
 
     // Captura de eventos para redimension de la ventana
     window.addEventListener('resize', updateAspectRatio);
@@ -100,10 +129,20 @@ function init()
     window.addEventListener('keydown', (moveRobot));
 }
 
-function loadScene()
-{
-    var txSuelo = new THREE.TextureLoader().load("images/pisometalico_1024.jpg");
-    var matSuelo = new THREE.MeshLambertMaterial({ color: 'white', map: txSuelo });
+function loadScene(){
+    // Habitacion
+    const walls = [];
+    walls.push(new THREE.MeshBasicMaterial({side: THREE.BackSide, map: new THREE.TextureLoader().load("images/posx.jpg")}));
+    walls.push(new THREE.MeshBasicMaterial({side: THREE.BackSide, map: new THREE.TextureLoader().load("images/negx.jpg")}));
+    walls.push(new THREE.MeshBasicMaterial({side: THREE.BackSide, map: new THREE.TextureLoader().load("images/posy.jpg")}));
+    walls.push(new THREE.MeshBasicMaterial({side: THREE.BackSide, map: new THREE.TextureLoader().load("images/negy.jpg")}));
+    walls.push(new THREE.MeshBasicMaterial({side: THREE.BackSide, map: new THREE.TextureLoader().load("images/posz.jpg")}));
+    walls.push(new THREE.MeshBasicMaterial({side: THREE.BackSide, map: new THREE.TextureLoader().load("images/negz.jpg")}));
+
+    const geoRoom = new THREE.BoxGeometry(1000,1000,1000);
+    const room = new THREE.Mesh(geoRoom, walls);
+    room.position.y = 495;
+    scene.add(room)
 
     // suelo
     const suelo = new THREE.Mesh(new THREE.PlaneGeometry(1000,1000,25, 25), matSuelo);
@@ -128,16 +167,16 @@ function loadScene()
     const geoMano = new THREE.CylinderGeometry( 15, 15, 40, 20 );
     
     // create meshes
-    const base = new THREE.Mesh( geoBase, material );
-    const eje = new THREE.Mesh( geoEje, material );
-    const esparrago = new THREE.Mesh( geoEsparrago, material );
-    const rotula = new THREE.Mesh( geoRotula, material );
-    const disco = new THREE.Mesh( geoDisco, material );
-    const nervio1 = new THREE.Mesh( geoNervio, material );
-    const nervio2 = new THREE.Mesh( geoNervio, material );
-    const nervio3 = new THREE.Mesh( geoNervio, material );
-    const nervio4 = new THREE.Mesh( geoNervio, material );
-    const mano = new THREE.Mesh( geoMano, material );
+    const base = new THREE.Mesh( geoBase, matMetal );
+    const eje = new THREE.Mesh( geoEje, matMetal );
+    const esparrago = new THREE.Mesh( geoEsparrago, matMetal );
+    const rotula = new THREE.Mesh( geoRotula, matRotula );
+    const disco = new THREE.Mesh( geoDisco, matWood );
+    const nervio1 = new THREE.Mesh( geoNervio, matWood );
+    const nervio2 = new THREE.Mesh( geoNervio, matWood );
+    const nervio3 = new THREE.Mesh( geoNervio, matWood );
+    const nervio4 = new THREE.Mesh( geoNervio, matWood );
+    const mano = new THREE.Mesh( geoMano, matWood );
     const geoPinza = new THREE.BufferGeometry();
 
     // define vertices of pinza
@@ -246,7 +285,6 @@ function loadScene()
     pinzaDe.receiveShadow = true;
     pinzaDe.castShadow = true;
 
-
     // put toghether the robot 
     robot.add(base);
     base.add(brazo);
@@ -274,10 +312,6 @@ function loadScene()
 
     //robot.add(planta)
 
-    
-
-
-
 }
 
 function update(delta)
@@ -291,8 +325,14 @@ function update(delta)
     pinzaDeObject.position.y = -effectController.separationPinza/2
     if (effectController.wired) {
         material.wireframe = true;
+        matMetal.wireframe = true;
+        matWood.wireframe = true;
+        matRotula.wireframe = true;
     } else {
         material.wireframe = false;
+        matMetal.wireframe = false;
+        matWood.wireframe = false;
+        matRotula.wireframe = false;
     }
 
     TWEEN.update(delta);
@@ -430,14 +470,6 @@ function animate(){
             effectController.rotateForearmZ = coords.rotation / Math.PI * 180;
             effectController.rotateHand = coords.rotation / Math.PI * 180;
             effectController.separationPinza = coords.y;
-
-            // robot.rotation.y = coords.rotation;
-            // brazo.rotation.z = coords.rotation;
-            // antebrazo.rotation.y = coords.rotation;
-            // antebrazo.rotation.z = coords.rotation;
-            // manoObject.rotation.z = coords.rotation;
-            // pinzaIzObject.position.y = coords.y;
-            // pinzaDeObject.position.y = -coords.y;
         });
 
     const back1 = new TWEEN.Tween({ rotation: target, y: targetPosition })
@@ -449,14 +481,6 @@ function animate(){
             effectController.rotateForearmZ = coords.rotation / Math.PI * 180;
             effectController.rotateHand = coords.rotation / Math.PI * 180;
             effectController.separationPinza = coords.y;
-            
-            // robot.rotation.y = coords.rotation;
-            // brazo.rotation.z = coords.rotation;
-            // antebrazo.rotation.y = coords.rotation;
-            // antebrazo.rotation.z = coords.rotation;
-            // manoObject.rotation.z = coords.rotation;
-            // pinzaIzObject.position.y = coords.y;
-            // pinzaDeObject.position.y = -coords.y;
         });
 
         const backward = new TWEEN.Tween({ rotation: initial, y: initalPosition})
@@ -468,14 +492,6 @@ function animate(){
                 effectController.rotateForearmZ = coords.rotation / Math.PI * 180;
                 effectController.rotateHand = coords.rotation / Math.PI * 180;
                 effectController.separationPinza = coords.y;
-
-                // robot.rotation.y = coords.rotation;
-                // brazo.rotation.z = coords.rotation;
-                // antebrazo.rotation.y = coords.rotation;
-                // antebrazo.rotation.z = coords.rotation;
-                // manoObject.rotation.z = coords.rotation;
-                // pinzaIzObject.position.y = coords.y;
-                // pinzaDeObject.position.y = -coords.y;
             });
 
         const back2 = new TWEEN.Tween({ rotation: -target, y: targetPosition })
@@ -487,14 +503,6 @@ function animate(){
                 effectController.rotateForearmZ = coords.rotation / Math.PI * 180;
                 effectController.rotateHand = coords.rotation / Math.PI * 180;
                 effectController.separationPinza = coords.y;
-                
-                // robot.rotation.y = coords.rotation;
-                // brazo.rotation.z = coords.rotation;
-                // antebrazo.rotation.y = coords.rotation;
-                // antebrazo.rotation.z = coords.rotation;
-                // manoObject.rotation.z = coords.rotation;
-                // pinzaIzObject.position.y = coords.y;
-                // pinzaDeObject.position.y = -coords.y;
             });
     
     
