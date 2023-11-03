@@ -226,6 +226,15 @@ function loadScene(){
         9, 8, 2,
         2, 3, 9
     ];
+
+    const uvs = new Float32Array([
+        0, 0, // UV for vertex 0
+        1, 0, // UV for vertex 1
+        1, 1, // UV for vertex 2
+        0, 1, // UV for vertex 3
+        // ... and so on for all vertices
+    ]);
+    
     
     geoPinza.setIndex( indices );
     geoPinza.setAttribute( 'position', new THREE.BufferAttribute( vertices, 3 ) );
