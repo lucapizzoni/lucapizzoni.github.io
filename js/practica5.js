@@ -30,19 +30,20 @@ let planta;
 const L = 90;
 
 // material
-const material = new THREE.MeshNormalMaterial({wireframe : false, flatShading : true, side : THREE.DoubleSide});
 const texSuelo = new THREE.TextureLoader().load("images/pisometalico_1024.jpg");
-const matSuelo = new THREE.MeshLambertMaterial({ color: 'white', map: texSuelo });
 const texMetal = new THREE.TextureLoader().load("images/metal_128.jpg");
-const matMetal = new THREE.MeshPhongMaterial({ color: 'white', map: texMetal });
-const texWood = new THREE.TextureLoader().load("images/wood512.jpg");
-const matWood = new THREE.MeshLambertMaterial({ color: 'white', map: texWood });
 const surrounding = [
     "images/posx.jpg","images/negx.jpg",
     "images/posy.jpg","images/negy.jpg",
     "images/posz.jpg","images/negz.jpg",
 ]
 const texRotula= new THREE.CubeTextureLoader().load(surrounding)
+
+const material = new THREE.MeshNormalMaterial({wireframe : false, flatShading : true, side : THREE.DoubleSide});
+const matSuelo = new THREE.MeshLambertMaterial({ color: 'white', map: texSuelo });
+const matMetalMat = new THREE.MeshLambertMaterial({ color: 'white', map: texMetal });
+const matMetalShiny = new THREE.MeshPhongMaterial({ color: 'white', specular: 0xFFFFFF, map: texMetal});
+const matPinza = new THREE.MeshPhongMaterial({ color: 'white', specular: 0xFFFFFF, map: texMetal, side : THREE.DoubleSide });
 const matRotula = new THREE.MeshPhongMaterial({color:"white",specular:"gray",shininess:30,envMap:texRotula})
 
 // Acciones
@@ -86,7 +87,7 @@ function init()
     scene.add( ambientLight );
     // directional
     const directionalLight = new THREE.DirectionalLight( 0xffffff, 0.5 );
-    directionalLight.position.set(0, 600, -500);
+    directionalLight.position.set(0, 600, 500);
     directionalLight.target.position.set(0, 0, 0);
     directionalLight.shadow.camera.far = 2000; 
     directionalLight.shadow.mapSize.width = 10000;
@@ -160,23 +161,24 @@ function loadScene(){
     // create geometries
     const geoBase = new THREE.CylinderGeometry( 50, 50, 15, 20 );
     const geoEje = new THREE.CylinderGeometry( 20, 20, 18, 20 );
-    const geoEsparrago = new THREE.BoxGeometry( 18, 120, 12 ); 
+    const geoEsparrago = new THREE.BoxGeometry( 18, 120, 12);
     const geoRotula = new THREE.SphereGeometry( 20, 20, 20 );
     const geoDisco = new THREE.CylinderGeometry( 22, 22, 6, 20 );
     const geoNervio = new THREE.BoxGeometry( 4, 80, 4 ); 
     const geoMano = new THREE.CylinderGeometry( 15, 15, 40, 20 );
     
     // create meshes
-    const base = new THREE.Mesh( geoBase, matMetal );
-    const eje = new THREE.Mesh( geoEje, matMetal );
-    const esparrago = new THREE.Mesh( geoEsparrago, matMetal );
+    const base = new THREE.Mesh( geoBase, matMetalMat );
+    const eje = new THREE.Mesh( geoEje, matMetalMat );
+    const esparrago = new THREE.Mesh( geoEsparrago, matMetalMat );
     const rotula = new THREE.Mesh( geoRotula, matRotula );
-    const disco = new THREE.Mesh( geoDisco, matWood );
-    const nervio1 = new THREE.Mesh( geoNervio, matWood );
-    const nervio2 = new THREE.Mesh( geoNervio, matWood );
-    const nervio3 = new THREE.Mesh( geoNervio, matWood );
-    const nervio4 = new THREE.Mesh( geoNervio, matWood );
-    const mano = new THREE.Mesh( geoMano, matWood );
+    const disco = new THREE.Mesh( geoDisco, matMetalMat );
+    const nervio1 = new THREE.Mesh( geoNervio, matMetalMat );
+    const nervio2 = new THREE.Mesh( geoNervio, matMetalMat );
+    const nervio3 = new THREE.Mesh( geoNervio, matMetalMat );
+    const nervio4 = new THREE.Mesh( geoNervio, matMetalMat );
+    const mano = new THREE.Mesh( geoMano, matMetalShiny );
+    
     const geoPinza = new THREE.BufferGeometry();
 
     // define vertices of pinza
@@ -226,14 +228,23 @@ function loadScene(){
         9, 8, 2,
         2, 3, 9
     ];
+
+    const uvs = new Float32Array([
+        0, 0, // UV for vertex 0
+        1, 0, // UV for vertex 1
+        1, 1, // UV for vertex 2
+        0, 1, // UV for vertex 3
+        // ... and so on for all vertices
+    ]);
+    
     
     geoPinza.setIndex( indices );
-
     geoPinza.setAttribute( 'position', new THREE.BufferAttribute( vertices, 3 ) );
+    geoPinza.computeVertexNormals();
     
     // create mesh of pinza
-    const pinzaIz = new THREE.Mesh( geoPinza, material );
-    const pinzaDe = new THREE.Mesh( geoPinza, material );
+    const pinzaIz = new THREE.Mesh(geoPinza, matPinza);
+    const pinzaDe = new THREE.Mesh(geoPinza, matPinza);
     
     // perform transformations to position meshes
     robot.position.y = 7,5;
@@ -325,13 +336,15 @@ function update(delta)
     pinzaDeObject.position.y = -effectController.separationPinza/2
     if (effectController.wired) {
         material.wireframe = true;
-        matMetal.wireframe = true;
-        matWood.wireframe = true;
+        matMetalMat.wireframe = true;
+        matMetalShiny.wireframe = true;
+        matPinza.wireframe = true;
         matRotula.wireframe = true;
     } else {
         material.wireframe = false;
-        matMetal.wireframe = false;
-        matWood.wireframe = false;
+        matMetalMat.wireframe = false;
+        matMetalShiny.wireframe = false;
+        matPinza.wireframe = false;
         matRotula.wireframe = false;
     }
 
