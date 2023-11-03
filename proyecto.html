@@ -54,11 +54,26 @@
                 color: black;
                 background-color: white;
             }
+            
+            #score-container{
+                justify-content: right;
+                align-items: flex-start;
+            }
+
+            #score-count{
+                font-size: 50px;
+            }
         </style>
     </head>
     <body>
 
         <div id="container"></div>
+
+        <div id="score-container" class="overlay" style="display: none; background: none;">
+            <div class="overlay-content">
+                <h1 id="score-count">Score: 0</h1>
+            </div>
+        </div>
 
         <div id="start-overlay" class="overlay" style="display: flex">
             <div class="overlay-content">
@@ -69,12 +84,9 @@
         <div id="restart-overlay" class="overlay" style="display: none">
             <div class="overlay-content">
                 <h1>Game Over</h1>
+                <h4 id="score">Score: </h4>
                 <button id="restart-button" class="button">Restart</button>
             </div>
-        </div>
-
-        <div id="info">
-            <h2>WebGL/Threejs Example</h2> 
         </div>
 
         <!-- Este enlace esta recomendado en la web de threejs -->

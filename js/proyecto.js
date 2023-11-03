@@ -8,6 +8,7 @@
 import * as THREE from "../lib/three.module.js"
 import {GLTFLoader} from "../lib/GLTFLoader.module.js"
 import { OrbitControls } from "../../lib/OrbitControls.module.js";
+import {TWEEN} from "../lib/tween.module.min.js";
 
 // Global variables
 let renderer, scene, camera;
@@ -22,6 +23,8 @@ let surrounding;
 let carBoundingBox;
 let obstacles = []
 let driving = false;
+let animating = false;
+let roundCount = 0
 // let obstacleBoundingBox;
 // let obstacle2BoundingBox;
 
@@ -164,9 +167,9 @@ function loadScene(){
             }
 
             carBoundingBox.setFromObject(car);
-            console.log('Car Bounding Box:');
-            console.log('Min:', carBoundingBox.min);
-            console.log('Max:', carBoundingBox.max);
+            // console.log('Car Bounding Box:');
+            // console.log('Min:', carBoundingBox.min);
+            // console.log('Max:', carBoundingBox.max);
 
             update();
 
@@ -236,7 +239,7 @@ function updateAspectRatio(){
     camera.updateProjectionMatrix();
 }
 
-function update(){
+function update(delta){
     checkCollision();
 
     if (mixer) {
@@ -254,15 +257,25 @@ function update(){
         t = speed;
     }
 
-    if (t > 1) t = 0;
+    if (t > 1){
+        t = 0;
+        roundCount += 1;
+        var score = document.getElementById('score-count');
+        score.textContent = 'Score: ' + roundCount;
+    } 
 
     var pointOnCurve = curveRight.getPointAt(t);
 
     // Update the car's position
     car.position.copy(pointOnCurve);
 
-    if (lane == 1) {
-        car.translateZ(-3);
+    if (!animating){
+        if (lane == 1) {
+            car.translateZ(-3);
+        }
+        else{
+            car.translateZ(0);
+        }
     }
 
     // Update the car's rotation to follow the curve
@@ -277,29 +290,32 @@ function update(){
     cameraHelper.rotation.y = angle;
 
     // Calculate the position behind the car
-    const distanceBehindCar = -10; // Adjust the distance as needed
-    const relativePosition = new THREE.Vector3(distanceBehindCar, 10, 0);
+    const relativePosition = new THREE.Vector3(-8, 7, 0);
     const cameraPosition = relativePosition.applyMatrix4(cameraHelper.matrixWorld);
 
     // Update the camera's position and look-at direction
     camera.position.copy(cameraPosition);
     camera.lookAt(cameraHelper.position);
+
+    TWEEN.update(delta);
 }
 
-function render(){
+function render(delta){
     requestAnimationFrame(render);
-    update();
+    update(delta);
     renderer.render(scene, camera);
     
     document.body.appendChild(renderer.domElement);
 }
 
 function changeLane(event){
-    if (event.key == 'ArrowLeft'){
+    if (event.key == 'ArrowLeft' && lane === 0){
         lane = 1;
+        animate();
     }
-    else if (event.key == 'ArrowRight'){
+    else if (event.key == 'ArrowRight' && lane === 1){
         lane = 0;
+        animate();
     }
 }
 
@@ -322,6 +338,12 @@ function checkCollision() {
             // console.log(gameOverOverlay)
             const gameOverOverlay = document.getElementById("restart-overlay");
             gameOverOverlay.style.display = 'flex';
+
+            const scoreCount = document.getElementById("score-container");
+            scoreCount.style.display = 'none';
+
+            var score = document.getElementById('score');
+            score.textContent = 'Score: ' + roundCount;
             
         }
     }
@@ -340,6 +362,13 @@ function restart() {
     // Hide the game-over overlay
     const restartOverlay = document.getElementById("restart-overlay");
     restartOverlay.style.display = 'none';
+
+    const scoreContainer = document.getElementById("score-container");
+    scoreContainer.style.display = 'flex';
+
+    roundCount = 0
+    var score = document.getElementById('score-count');
+    score.textContent = 'Score: ' + roundCount;
 }
 
 function start(){
@@ -352,7 +381,38 @@ function start(){
     speed = 0.001;
     lane = 0;
 
+    const score = document.getElementById("score-container");
+    score.style.display = 'flex';
+
     // Hide the game-over overlay
     const startOverlay = document.getElementById("start-overlay");
     startOverlay.style.display = 'none';
+
+}
+
+function animate(){
+    const toLeft = new TWEEN.Tween({ z: 0})
+    const toRight = new TWEEN.Tween({ z: -3})
+    if (lane == 1){
+        animating = true;
+        toLeft.to({ z: -3}, 100)
+        toLeft.onUpdate((coords) => {
+            car.translateZ(coords.z);
+        });
+        toLeft.onComplete(() => {
+            animating = false;
+        });
+        toLeft.start();
+    }  
+    if (lane == 0){
+        animating = true;
+        toRight.to({ z: 0}, 100)
+        toRight.onUpdate((coords) => {
+            car.translateZ(coords.z);
+        });
+        toRight.onComplete(() => {
+            animating = false;
+        });
+        toRight.start();
+    }  
 }
