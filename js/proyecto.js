@@ -19,14 +19,11 @@ let lane = 0;
 let car;
 let mixer;
 let speed = 0.001;
-let surrounding;
 let carBoundingBox;
 let obstacles = []
 let driving = false;
 let animating = false;
 let roundCount = 0
-// let obstacleBoundingBox;
-// let obstacle2BoundingBox;
 
 // Actions
 init();
@@ -54,34 +51,32 @@ function init(){
     // Lighting
     const ambientLight = new THREE.AmbientLight( 0x404040, 1.5 );
     scene.add( ambientLight );
-    // const hemisphereLight = new THREE.HemisphereLight( 0xffffbb, 0x080820, 0.4 );
-    //scene.add( hemisphereLight );
     const directionalLight1 = new THREE.DirectionalLight( 0xffffff, 1.5 );
     directionalLight1.position.set(50, 30, 0);
-    const directionalLight2 = new THREE.DirectionalLight( 0xffffff, 0.5 );
-    directionalLight2.position.set(-50, 30, 0);
-    const directionalLight3 = new THREE.DirectionalLight( 0xffffff, 0.5 );
-    directionalLight3.position.set(0, 30, 50);
-    const directionalLight4 = new THREE.DirectionalLight( 0xffffff, 0.5 );
-    directionalLight4.position.set(0, 30, -50);
     scene.add( directionalLight1 );
-    //scene.add( directionalLight2 );
-    //scene.add( directionalLight3 );
-    //scene.add( directionalLight4 );
 
     // Events
     window.addEventListener('resize', updateAspectRatio);
     window.addEventListener('keydown', (changeLane));
-
     const restartButton = document.getElementById('restart-button');
     restartButton.addEventListener('click', restart);
-
     const startButton = document.getElementById('start-button');
     startButton.addEventListener('click', start);
-
 }
 
 function loadScene(){
+    // material
+    const material = new THREE.LineBasicMaterial( { color: 0xff0000 } );
+    const materialTransparent = new THREE.MeshBasicMaterial({
+        color: 0x00ff00,
+        opacity: 0,
+        transparent: true
+    });
+    
+    // create car bounding box
+    carBoundingBox = new THREE.Box3();
+
+    // create obstacle bounding boxes
     const obstacle1 = new THREE.Box3();
     obstacle1.min.set(64, 0, -12);
     obstacle1.max.set(66, 1, -8);
@@ -115,39 +110,15 @@ function loadScene(){
     obstacle8.max.set(17, 1, -20);
     obstacles.push(obstacle8);
 
-    // const boundingBoxHelper = new THREE.Box3Helper(obstacle1, 0x00ff00); // Use your desired color for the bounding box
-    // scene.add(boundingBoxHelper);
-
-    carBoundingBox = new THREE.Box3();
-    // obstacleBoundingBox = new THREE.Box3();
-
-    // obstacle2BoundingBox = new THREE.Box3();
-    // obstacle2BoundingBox.min.set(45, 0, 20); // Set the minimum corner
-    // obstacle2BoundingBox.max.set(46, 2, 21);   // Set the maximum corner
-
-    // Import model
+    // Import scene
     const gltfloader = new GLTFLoader();
     gltfloader.load(
         'models/scene/scene.gltf',
         function( gltf ){
-
             scene.add( gltf.scene );
-
-            surrounding = gltf.scene;
-
-            // const obstacle = surrounding.getObjectByName('obstacle');
-            // obstacleBoundingBox.setFromObject(obstacle);
-            // obstacleBoundingBox.min.set(62, 0, -14); // Set the minimum corner
-            // obstacleBoundingBox.max.set(66, 1, -10);   // Set the maximum corner
-            // console.log('Obstacle Bounding Box:');
-            // console.log('Min:', obstacleBoundingBox.min);
-            // console.log('Max:', obstacleBoundingBox.max);
-            // console.log('Obstacle position: ', obstacle.position.x, ' ', obstacle.position.y, ' ', obstacle.position.z, )
-
-
-
         })
 
+    // import car
     gltfloader.load(
         'models/car/scene.gltf',
         function( gltf ){
@@ -156,27 +127,20 @@ function loadScene(){
             scene.add( gltf.scene );
             car = gltf.scene
 
+            // add animations
             if (gltf.animations && gltf.animations.length > 0) {
-                // Create an AnimationMixer
                 mixer = new THREE.AnimationMixer(car);
-
-                // Add all animations to the mixer
                 for (const clip of gltf.animations) {
                     mixer.clipAction(clip).play();
                 }
             }
 
             carBoundingBox.setFromObject(car);
-            // console.log('Car Bounding Box:');
-            // console.log('Min:', carBoundingBox.min);
-            // console.log('Max:', carBoundingBox.max);
 
             update();
-
         })
 
-
-    // Create a closed wavey loop
+    // create curve
     curveRight = new THREE.CatmullRomCurve3( [
         new THREE.Vector3( 19, 1, -21.5 ),
         new THREE.Vector3( 35, 1, -20.5 ),
@@ -196,40 +160,20 @@ function loadScene(){
         new THREE.Vector3( 19, 1, -21.5 )
 
     ] );
-
     //addPointsToScene(curveRight.getPoints(15), scene);
+    const pointsCurve = curveRight.getPoints( 500 )
+    const geometryCurve = new THREE.BufferGeometry().setFromPoints( pointsCurve );
+    const curveObject = new THREE.Line( geometryCurve, materialTransparent );
+    scene.add(curveObject)
 
-    const pointsRight = curveRight.getPoints( 500 )
-
-    const material = new THREE.LineBasicMaterial( { color: 0xff0000 } );
-    const materialTransparent = new THREE.MeshBasicMaterial({
-        color: 0x00ff00, // Set your desired color
-        opacity: 0,     // Adjust the opacity (0.0 to 1.0)
-        transparent: true // Enable transparency
-    });
-
-    const cubeGeometry = new THREE.BoxGeometry( 4, 2, 2 );
-    const geometryRight = new THREE.BufferGeometry().setFromPoints( pointsRight );
-
-    const curveObjectRight = new THREE.Line( geometryRight, materialTransparent );
-
-    scene.add(curveObjectRight)
-
+    // create axis helper
     var axisHelper = new THREE.AxisHelper(10)
     axisHelper.position.y = 1
     //scene.add(axisHelper);
 
+    // create camera helper
+    const cubeGeometry = new THREE.BoxGeometry( 4, 2, 2 );
     cameraHelper = new THREE.Mesh( cubeGeometry, materialTransparent );
-
-    // const boxGeometry = new THREE.BoxGeometry(1, 1, 1);
-    // const box = new THREE.Mesh(boxGeometry, material);
-    // scene.add(box);
-    // box.position.set(65, 0, -10);
-    // obstacleBoundingBox.setFromObject(box);
-    // console.log('Obstacle Bounding Box:');
-    // console.log('Min:', obstacleBoundingBox.min);
-    // console.log('Max:', obstacleBoundingBox.max);
-
     scene.add( cameraHelper )
 }
 
@@ -244,11 +188,11 @@ function update(delta){
 
     if (mixer) {
         // Update the animation mixer
-        mixer.update(0.01); // You can pass a time delta as a parameter to control the animation speed
+        mixer.update(0.01);
     }
 
     // Increase speed gradually
-    speed += 0.0000009; // You can adjust the rate of acceleration as needed
+    speed += 0.0000009;
 
     if (driving){
         t += speed;
@@ -280,9 +224,8 @@ function update(delta){
 
     // Update the car's rotation to follow the curve
     const tangent = curveRight.getTangentAt(t);
-    const angle = Math.atan2(-tangent.z, tangent.x); // Calculate the angle based on the tangent
+    const angle = Math.atan2(-tangent.z, tangent.x);
     car.rotation.y = angle;
-    //console.log(car.rotation.y)
 
     const pointForHelper = curveRight.getPointAt(t);
     // Update the helper's position
@@ -335,7 +278,6 @@ function checkCollision() {
     for (const obstacle of obstacles) {
         if (carBoundingBox.intersectsBox(obstacle)) {
             driving = false
-            // console.log(gameOverOverlay)
             const gameOverOverlay = document.getElementById("restart-overlay");
             gameOverOverlay.style.display = 'flex';
 
