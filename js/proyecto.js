@@ -186,8 +186,8 @@ function updateAspectRatio(){
 function update(delta){
     checkCollision();
 
+    // animate car
     if (mixer) {
-        // Update the animation mixer
         mixer.update(0.01);
     }
 
@@ -333,6 +333,7 @@ function start(){
 }
 
 function animate(){
+    // make animation smoother
     const toLeft = new TWEEN.Tween({ z: 0})
     const toRight = new TWEEN.Tween({ z: -3})
     if (lane == 1){
